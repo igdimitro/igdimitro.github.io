@@ -19,26 +19,27 @@ var context = canvas.getContext("2d");
 context.canvas.width = window.innerWidth;
 context.canvas.height = window.innerHeight;
 
-// var map = [
-// 	'##########',
-// 	'0000000000',
-// 	'0#########',
-// 	'000000000#',
-// 	'000000000#',
-// 	'000000000#',
-// 	'##00######',
-// 	'000000000#',
-// 	'0###0###0#',
-// 	'00000#0#0#',
-// 	'0#####0###',
-// 	'000#00000#',
-// 	'##0#0#####',
-// 	'0#0#00000#',
-// 	'0#0#####0#',
-// 	'000#00000#',
-// 	'0###0###0#',
-// 	'000000000#'
-// ]
+/*
+var map = [
+ 	'##########',
+ 	'0000000000',
+ 	'0#########',
+ 	'000000000#',
+ 	'000000000#',
+ 	'000000000#',
+ 	'##00######',
+ 	'000000000#',
+ 	'0###0###0#',
+ 	'00000#0#0#',
+ 	'0#####0###',
+ 	'000#00000#',
+ 	'##0#0#####',
+ 	'0#0#00000#',
+ 	'0#0#####0#',
+ 	'000#00000#',
+ 	'0###0###0#',
+ 	'000000000#'
+ ] */
 
 var map = [
 	'##########',
@@ -63,9 +64,9 @@ var map = [
 var blockWidth = canvas.width / map[0].length;
 var blockHeight = canvas.height / map.length;
 
-var wallColor = '#6600ff';
+var wallColor = '#02BF02';
 var corridorColor = '#ffffff';
-var ballColor = '#000000';
+var ballColor = '#FC0303';
 var blockColors = {
 	'#': wallColor,
 	'0': corridorColor
@@ -73,7 +74,7 @@ var blockColors = {
 
 var ballRadius = blockWidth < blockHeight ? blockWidth / 3 : blockHeight / 3;
 var ballStartX = (map[0].length - 2) * blockWidth + ballRadius;
-var ballStartY = (map.length -2) * blockHeight;
+var ballStartY = (map.length - 2) * blockHeight;
 
 
 var ball = {
@@ -217,7 +218,7 @@ if (window.DeviceMotionEvent) {
 }
 
 function drawDebug(){
-	context.font = "80px Arial";
+	context.font = "50px Arial";
 	context.fillStyle = "red";
 	context.fillText("GOAL", blockWidth * 1.5, blockHeight * 2);
 }
@@ -511,7 +512,7 @@ function drawCanvas() {
 	moveBall();
 }
 
-setInterval(drawCanvas, 10);
+setInterval(drawCanvas, 16);
 
 </script>
 </body>
