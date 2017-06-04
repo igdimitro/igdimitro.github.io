@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Labyrinth</title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #fff; border : #000 1px solid;}
+    </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<script>
+var canvas = document.getElementById("canvas");
+var context = canvas.getContext("2d");
+
+context.canvas.width = window.innerWidth;
+context.canvas.height = window.innerHeight;
+
+// var map = [
+// 	'##########',
+// 	'0000000000',
+// 	'0#########',
+// 	'000000000#',
+// 	'000000000#',
+// 	'000000000#',
+// 	'##00######',
+// 	'000000000#',
+// 	'0###0###0#',
+// 	'00000#0#0#',
+// 	'0#####0###',
+// 	'000#00000#',
+// 	'##0#0#####',
+// 	'0#0#00000#',
+// 	'0#0#####0#',
+// 	'000#00000#',
+// 	'0###0###0#',
+// 	'000000000#'
+// ]
+
+var map = [
+	'##########',
+	'#000000#0#',
+	'#000##000#',
+	'#####00#0#',
+	'#000####0#',
+	'#0#0000#0#',
+	'#0####0#0#',
+	'#0000#000#',
+	'####0#####',
+	'#00000000#',
+	'#00000000#',
+	'#######00#',
+	'#00000000#',
+	'#00000000#',
+	'#00#######',
+	'#00000000#',
+	'#00000000#',
+	'##########',
+]
+var blockWidth = canvas.width / map[0].length;
+var blockHeight = canvas.height / map.length;
+
+var wallColor = '#6600ff';
+var corridorColor = '#ffffff';
+var ballColor = '#000000';
+var blockColors = {
+	'#': wallColor,
+	'0': corridorColor
+}
+
+var ballRadius = blockWidth < blockHeight ? blockWidth / 3 : blockHeight / 3;
+var ballStartX = (map[0].length - 2) * blockWidth + ballRadius;
+var ballStartY = (map.length -2) * blockHeight;
+
+
+var ball = {
+	xCord: ballStartX,
+	yCord: ballStartY,
+	radius: ballRadius
+}
+
+function createLabyrinth(map) {
+
+	var labyrinth = [];
+
+	for (var i = 0; i < map.length; i++) {
+
+		var row = map[i];
+		labyrinth[i] = [];
+
+		for (var j = 0; j < row.length; j++) {
+
+			labyrinth[i][j] = {
+				xCord: j * blockWidth,
+				yCord: i * blockHeight,
+				color: blockColors[map[i][j]]
+			}
+		}
+	}
+
+	return labyrinth;
+}
+
+var labyrinth = createLabyrinth(map);
+
+function drawBall() {
+
+	context.beginPath();
+	context.arc(ball.xCord, ball.yCord, ball.radius, 0, 2 * Math.PI);
+	context.fillStyle = ballColor;
+	context.fill();
+	context.closePath();
+
+}
+
+function drawBlock(xCord, yCord, color) {
+
+	context.beginPath();
+	context.rect(xCord, yCord, blockWidth, blockHeight);
+	context.fillStyle = color;
+	context.strokeStyle = color;
+	context.fill();
+	context.stroke();
+}
+
+
+function drawLabyrinth(labyrinth) {
+
+	for (var i = 0; i < labyrinth.length; i++) {
+
+		var row = labyrinth[i];
+
+		for (var j = 0; j < row.length; j++) {
+
+			drawBlock(labyrinth[i][j].xCord, labyrinth[i][j].yCord, labyrinth[i][j].color);
+		}
+	}
+}
+
+var ballSpeedUnit = 4;
+
+
+var leftPressed = false;
+var rightPressed = false;
+var upPressed = false;
+var downPressed = false;
+
+
+document.addEventListener("keydown", keyDownHandler, false);
+document.addEventListener("keyup", keyUpHandler, false);
+
+function keyDownHandler(e) {
+
+	if (e.keyCode == 39) {
+		rightPressed = true;
+	}
+	if (e.keyCode == 37) {
+		leftPressed = true;
+	}
+	if (e.keyCode == 38) {
+		upPressed = true;
+	}
+	if (e.keyCode == 40) {
+		downPressed = true;
+	}
+}
+
+function keyUpHandler(e) {
+
+	if (e.keyCode == 39) {
+		rightPressed = false;
+	}
+	if (e.keyCode == 37) {
+		leftPressed = false;
+	}
+	if (e.keyCode == 38) {
+		upPressed = false;
+	}
+	if (e.keyCode == 40) {
+		downPressed = false;
+	}
+}
+
+if (window.DeviceMotionEvent) {
+	window.addEventListener('devicemotion', function(event) {
+		var x = event.accelerationIncludingGravity.x;
+		var y = event.accelerationIncludingGravity.y;
+
+		if (x > 0.25) {
+			leftPressed = true;
+		} else {
+			leftPressed = false;
+		}
+		if (x < -0.25) {
+			rightPressed = true;
+		} else {
+			rightPressed = false;
+		}
+		if (y < -0.25) {
+			upPressed = true;
+		} else {
+			upPressed = false;
+		}
+		if (y > 0.25) {
+			downPressed = true;
+		} else {
+			downPressed = false;
+		}
+
+		if (x != null) {
+			ballSpeedUnit = 1 + Math.max(Math.abs(x), Math.abs(y));
+		}
+	});
+}
+
+function drawDebug(){
+	context.font = "80px Arial";
+	context.fillStyle = "red";
+	context.fillText("GOAL", blockWidth * 1.5, blockHeight * 2);
+}
+
+function moveBall() {
+
+	// ball before movement
+	var currentBall = {
+		xCord: ball.xCord,
+		yCord: ball.yCord,
+		radius: ball.radius
+	}
+
+	var collisionBlock = null;
+
+
+	if (rightPressed && upPressed) {
+
+		currentBall.xCord += ballSpeedUnit;
+		currentBall.yCord -= ballSpeedUnit;
+
+		collisionBlock = detectCollision(currentBall);
+
+		// no collision
+		if (collisionBlock == null) {
+			ball.xCord = currentBall.xCord;
+			ball.yCord = currentBall.yCord;
+		}
+		// collision with labyrinth boundary 
+		else if (collisionBlock == true) {
+
+			// if its on the right boundary
+			if (currentBall.xCord + ball.radius > canvas.width) {
+				ball.xCord = canvas.width - ball.radius;
+				rightPressed = false;
+
+				// if its on the top boundary
+			} else if (currentBall.yCord - ballRadius < 0) {
+				ball.yCord = ball.radius;
+				upPressed = false;
+			}
+		}
+		// collision with wallblock
+		else {
+
+			// if collision is on the right
+			if (currentBall.xCord < collisionBlock.xCord &&
+				currentBall.yCord > collisionBlock.yCord) {
+				ball.xCord = collisionBlock.xCord - ball.radius - 1;
+				rightPressed = false;
+			}
+			// if collision is on the top 
+			else if (currentBall.yCord > collisionBlock.yCord &&
+				currentBall.xCord > collisionBlock.xCord) {
+				ball.yCord = collisionBlock.yCord + blockHeight + ball.radius + 1;
+				upPressed = false;
+			}
+		}
+	} else if (rightPressed && downPressed) {
+
+		currentBall.xCord += ballSpeedUnit;
+		currentBall.yCord += ballSpeedUnit;
+
+		collisionBlock = detectCollision(currentBall);
+
+		// no collision
+		if (collisionBlock == null) {
+			ball.xCord = currentBall.xCord;
+			ball.yCord = currentBall.yCord;
+		}
+		// collision with labyrinth boundary 
+		else if (collisionBlock == true) {
+
+			// if its on the right boundary
+			if (currentBall.xCord + ball.radius > canvas.width) {
+				ball.xCord = canvas.width - ball.radius;
+				rightPressed = false;
+
+				// if its on the bottom boundary
+			} else if (currentBall.yCord + ballRadius > canvas.height) {
+				ball.yCord = canvas.height - ball.radius;
+				downPressed = false;
+			}
+		}
+		// collision with wallblock
+		else {
+
+			// if collision is on the right
+			if (currentBall.xCord < collisionBlock.xCord &&
+				currentBall.yCord > collisionBlock.yCord) {
+				ball.xCord = collisionBlock.xCord - ball.radius - 1;
+				rightPressed = false;
+			}
+
+			// if collision is on the bottom 
+			else if (currentBall.xCord > collisionBlock.xCord &&
+				currentBall.yCord < collisionBlock.yCord) {
+				ball.yCord = collisionBlock.yCord - ball.radius - 1;
+				downPressed = false;
+			}
+		}
+	} else if (leftPressed && upPressed) {
+
+		currentBall.xCord -= ballSpeedUnit;
+		currentBall.yCord -= ballSpeedUnit;
+
+		collisionBlock = detectCollision(currentBall);
+
+		// no collision
+		if (collisionBlock == null) {
+			ball.xCord = currentBall.xCord;
+			ball.yCord = currentBall.yCord;
+		}
+		// collision with labyrinth boundary 
+		else if (collisionBlock == true) {
+
+			// if its on the left boundary
+			if (currentBall.xCord - ball.radius < 0) {
+				ball.xCord = ball.radius;
+				leftPressed = false;
+
+				// if its on the top boundary
+			} else if (currentBall.yCord - ball.radius < 0) {
+				ball.yCord = ball.radius;
+				upPressed = false;
+			}
+		}
+		// collision with wallblock
+		else {
+
+			// ?????
+
+			if (currentBall.yCord > collisionBlock.yCord + blockHeight) {
+				ball.yCord = collisionBlock.yCord + blockHeight + ball.radius + 1;
+				upPressed = false;
+			}
+			// if collision is on the left
+			else if (currentBall.xCord > collisionBlock.xCord &&
+				currentBall.yCord > collisionBlock.yCord) {
+				ball.xCord = collisionBlock.xCord + blockWidth + ball.radius + 1;
+				leftPressed = false;
+			}
+		}
+	} else if (leftPressed && downPressed) {
+
+		currentBall.xCord -= ballSpeedUnit;
+		currentBall.yCord += ballSpeedUnit;
+
+		collisionBlock = detectCollision(currentBall);
+
+		// no collision
+		if (collisionBlock == null) {
+			ball.xCord = currentBall.xCord;
+			ball.yCord = currentBall.yCord;
+		}
+		// collision with labyrinth boundary 
+		else if (collisionBlock == true) {
+
+			// if its on the left boundary
+			if (currentBall.xCord - ball.radius < 0) {
+				ball.xCord = ball.radius;
+				leftPressed = false;
+
+				// if its on the bottom boundary
+			} else if (currentBall.yCord + ballRadius > canvas.height) {
+				ball.yCord = canvas.height - ball.radius;
+				downPressed = false;
+			}
+		}
+		// collision with wallblock
+		else {
+
+			// if collision is on the left
+			if (currentBall.xCord > collisionBlock.xCord &&
+				currentBall.yCord > collisionBlock.yCord) {
+				ball.xCord = collisionBlock.xCord + blockWidth + ball.radius + 1;
+				leftPressed = false;
+			}
+			// if collision is on the bottom 
+			else if (currentBall.yCord < collisionBlock.yCord &&
+				currentBall.xCord > collisionBlock.xCord) {
+				ball.yCord = collisionBlock.yCord - ball.radius - 1;
+				downPressed = false;
+			}
+		}
+	} 
+	else if ((upPressed && downPressed) || (leftPressed && rightPressed)) {
+		// stop the ball
+	}
+	else if (rightPressed) {
+
+		currentBall.xCord += ballSpeedUnit;
+		collisionBlock = detectCollision(currentBall);
+
+		// no collision
+		if (collisionBlock == null) {
+			ball.xCord = currentBall.xCord;
+		}
+		// collision with labyrinth boundary 
+		else if (collisionBlock == true) {
+			ball.xCord = canvas.width - ball.radius;
+		}
+		// collision with wallblock
+		else {
+			// 1 for the buffer 
+			ball.xCord = collisionBlock.xCord - ball.radius - 1;
+		}
+	} else if (leftPressed) {
+
+		currentBall.xCord -= ballSpeedUnit;
+		collisionBlock = detectCollision(currentBall);
+
+		if (collisionBlock == null) {
+			ball.xCord = currentBall.xCord;
+		} else if (collisionBlock == true) {
+			ball.xCord = ball.radius;
+		} else {
+			ball.xCord = collisionBlock.xCord + blockWidth + ball.radius + 1;
+		}
+
+
+	} else if (downPressed) {
+
+		currentBall.yCord += ballSpeedUnit;
+		collisionBlock = detectCollision(currentBall);
+
+		if (collisionBlock == null) {
+			ball.yCord = currentBall.yCord;
+		} else if (collisionBlock == true) {
+			ball.yCord = canvas.height - ball.radius;
+		} else {
+			ball.yCord = collisionBlock.yCord - ball.radius - 1;
+		}
+
+	} else if (upPressed) {
+
+		currentBall.yCord -= ballSpeedUnit;
+		collisionBlock = detectCollision(currentBall);
+
+		if (collisionBlock == null) {
+			ball.yCord = currentBall.yCord;
+		} else if (collisionBlock == true) {
+			ball.yCord = ball.radius;
+		} else {
+			ball.yCord = collisionBlock.yCord + blockHeight + ball.radius + 1;
+		}
+	}
+}
+function detectCollision(ball) {
+
+	// detect labyrinth boundary collision
+	if (ball.xCord + ball.radius > canvas.width ||
+		ball.xCord - ball.radius < 0 ||
+		ball.yCord + ball.radius > canvas.height ||
+		ball.yCord - ball.radius < 0) {
+		return true;
+	}
+
+	// detect wall block collision
+	for (var i = 0; i < labyrinth.length; i++) {
+
+		var row = labyrinth[i];
+
+		for (var j = 0; j < row.length; j++) {
+
+			var block = labyrinth[i][j];
+
+
+			if (block.color == wallColor) {
+
+				if (ball.xCord + ball.radius > block.xCord &&
+					ball.xCord - ball.radius < block.xCord + blockWidth &&
+					ball.yCord + ball.radius > block.yCord &&
+					ball.yCord - ball.radius < block.yCord + blockHeight) {
+					return block;
+				}
+			}
+		}
+	}
+
+	// no collision detected
+	return null;
+}
+
+function drawCanvas() {
+
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	drawLabyrinth(labyrinth);
+	drawDebug();
+	drawBall();
+	moveBall();
+}
+
+setInterval(drawCanvas, 10);
+
+</script>
+</body>
+</html>
